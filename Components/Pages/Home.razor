@@ -1,9 +1,109 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Newtonsoft.Json
 
-<h1>Hello, world!</h1>
 
-Welcome to your new app.
+@*Menu*@
+<h1>Nuestra Selecci&oacute;n de Pizzas</h1>
+@foreach (var pizza in Estado.Menu.Pizzas)
+{
+	<div class="row">
+		<div class="col">
+			@pizza.Nombre
+		</div>
+		<div class="col text-right">
+			@($"{pizza.Precio:0.00}")
+		</div>
+		<div class="col"></div>
+		<div class="col">
+			<img src="@ImagenPicantez(pizza.Picantez)"
+				 alt="@pizza.Picantez" />
+		</div>
+		<div class="col">
+			<button class="btn btn-success pl-4 pr-4"
+					@onclick="@(() => AgregarCarrito(pizza))">
+				Agregar
+			</button>
+		</div>
+	</div>
+}
 
+@*Carrito de compras*@
+@if (Estado.Carrito.Ordenes.Any())
+{
+	<h1 class="">Tu Pedido Actual</h1>
+	@foreach (var (pizza, pos) in Estado.Carrito.Ordenes.Select(
+						(id, pos) => (Estado.Menu.ObtenerPizza(id), pos)))
+	{
+		<div class="row mb-2">
+			<div class="col">
+				@pizza.Nombre
+			</div>
+			<div class="col text-right">
+				@($"{pizza.Precio:0.00}")
+			</div>
+			<div class="col"></div>
+			<div class="col"></div>
+			<div class="col">
+				<button class="btn btn-danger"
+						@onclick="@(() => RemoverDelCarrito(pos))">
+					Remover
+				</button>
+			</div>
+		</div>
+	}
+	<div class="row">
+		<div class="col"></div>
+		<div class="col"><hr /></div>
+		<div class="col"></div>
+		<div class="col"></div>
+		<div class="col"> </div>
+		<div class="col"> </div>
+	</div>
+	<div class="row">
+		<div class="col"> Total:</div>
+		<div class="col text-right font-weight-bold">
+			@($"{Estado.PrecioTotal:0.00}")
+		</div>
+		<div class="col"> </div>
+		<div class="col"> </div>
+		<div class="col"> </div>
+	</div>
+}
+
+@*Entrada Cliente*@
+<h1>Por favor, Inserte su Datos m&aacute;s abajo</h1>
+<EditForm Model="@Estado.Carrito.Cliente" OnValidSubmit="RealizarPedido">
+	<DataAnnotationsValidator />
+	<fieldset>
+		<div class="row mb-2">
+			<label class="col-2" for="nombre">Nombre:</label>
+			<InputText class="form-control col-6" @bind-Value="@Estado.Carrito.Cliente.Nombre" />
+			<ValidationMessage For="@(() => Estado.Carrito.Cliente.Nombre)" />
+		</div>
+		<div class="row mb-2">
+			<label class="col-2" for="calle">Calle:</label>
+			<InputText class="form-control col-6" @bind-Value="@Estado.Carrito.Cliente.Calle" />
+			<ValidationMessage For="@(() => Estado.Carrito.Cliente.Calle)" />
+		</div>
+		<div class="row mb-2">
+			<label class="col-2" for="ciudad">Ciudad:</label>
+			<InputText class="form-control col-6" @bind-Value="@Estado.Carrito.Cliente.Ciudad" />
+			<ValidationMessage For="@(() => Estado.Carrito.Cliente.Ciudad)" />
+		</div>
+		<div class="row mb-2">
+			<button class="mx-auto w-25 btn btn-success" @onclick="RealizarPedido">
+				Listo
+			</button>
+		</div>
+	</fieldset>
+</EditForm>
+
+@*
+	<pre>
+		@ToJson()
+	</pre>
+*@
 @code {
 	private Estado Estado { get; } = new Estado();
 
@@ -14,5 +114,24 @@ Welcome to your new app.
 		Estado.Menu.Agregar(new Pizza(1, "Pepperoni", 8.99M, Picantez.Picante));
 		Estado.Menu.Agregar(new Pizza(2, "Margarita", 7.99M, Picantez.Ninguno));
 		Estado.Menu.Agregar(new Pizza(3, "Diabolo", 9.99M, Picantez.Extremo));
+	}
+
+	private string ImagenPicantez(Picantez picantez)
+	=> $"images/{picantez.ToString().ToLower()}.png";
+
+	private void AgregarCarrito(Pizza pizza)
+	=> Estado.Carrito.Agregar(pizza.Id);
+
+	private void RemoverDelCarrito(int pos)
+	=> Estado.Carrito.Remover(pos);
+
+	private void RealizarPedido()
+	{
+		Console.WriteLine("Realizando Pedido");
+	}
+
+	private string ToJson()
+	{
+		return JsonConvert.SerializeObject(Estado);
 	}
 }
